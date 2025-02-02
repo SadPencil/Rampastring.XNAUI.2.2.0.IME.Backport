@@ -34,7 +34,7 @@ namespace Rampastring.XNAUI.Input
         static bool initialized;
         static IntPtr prevWndProc;
         static WndProc hookProcDelegate;
-        static IntPtr hIMC;
+        //static IntPtr hIMC;
 
         //various Win32 constants that we need
         const int GWL_WNDPROC = -4;
@@ -48,11 +48,11 @@ namespace Rampastring.XNAUI.Input
         const int DLGC_WANTALLKEYS = 4;
 
         //Win32 functions that we're using
-        [DllImport("Imm32.dll")]
-        static extern IntPtr ImmGetContext(IntPtr hWnd);
+        //[DllImport("Imm32.dll")]
+        //static extern IntPtr ImmGetContext(IntPtr hWnd);
 
-        [DllImport("Imm32.dll")]
-        static extern IntPtr ImmAssociateContext(IntPtr hWnd, IntPtr hIMC);
+        //[DllImport("Imm32.dll")]
+        //static extern IntPtr ImmAssociateContext(IntPtr hWnd, IntPtr hIMC);
 
         [DllImport("user32.dll")]
         static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
@@ -77,7 +77,7 @@ namespace Rampastring.XNAUI.Input
             prevWndProc = (IntPtr)SetWindowLong(window.Handle, GWL_WNDPROC,
                 (int)Marshal.GetFunctionPointerForDelegate(hookProcDelegate));
 
-            hIMC = ImmGetContext(window.Handle);
+            //hIMC = ImmGetContext(window.Handle);
             initialized = true;
         }
 
@@ -106,15 +106,15 @@ namespace Rampastring.XNAUI.Input
                         CharEntered(null, new KeyboardEventArgs((char)wParam, lParam.ToInt32()));
                     break;
 
-                case WM_IME_SETCONTEXT:
-                    if (wParam.ToInt32() == 1)
-                        ImmAssociateContext(hWnd, hIMC);
-                    break;
+                    //case WM_IME_SETCONTEXT:
+                    //    if (wParam.ToInt32() == 1)
+                    //        ImmAssociateContext(hWnd, hIMC);
+                    //    break;
 
-                case WM_INPUTLANGCHANGE:
-                    ImmAssociateContext(hWnd, hIMC);
-                    returnCode = (IntPtr)1;
-                    break;
+                    //case WM_INPUTLANGCHANGE:
+                    //    ImmAssociateContext(hWnd, hIMC);
+                    //    returnCode = (IntPtr)1;
+                    //    break;
             }
 
             return returnCode;

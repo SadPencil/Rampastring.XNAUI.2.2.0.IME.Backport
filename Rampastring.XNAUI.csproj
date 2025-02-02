@@ -149,6 +149,7 @@
   <ItemGroup>
     <Compile Include="AssetLoader.cs" />
     <Compile Include="GUICreator.cs" />
+    <Compile Include="Input\IIMEHandler.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="EnhancedSoundEffect.cs" />
     <Compile Include="PlatformSpecific\IGameWindowManager.cs" />

@@ -165,6 +165,11 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public int TextEndPosition { get; set; }
 
+        /// <summary>
+        /// Can be set to disable IME (Input Method Editor) support for this control.
+        /// </summary>
+        public bool IMEDisabled { get; set; }
+
         // TODO PreviousControl and NextControl should be implemented at XNAControl level,
         // but we currently lack a generic way to handle input in a selected control
         // (without having all controls subscribe to Keyboard.OnKeyPressed, which could
@@ -214,16 +219,40 @@ namespace Rampastring.XNAUI.XNAControls
             KeyboardEventInput.CharEntered += KeyboardEventInput_CharEntered;
 #endif
             Keyboard.OnKeyPressed += Keyboard_OnKeyPressed;
+
+            InitializeIME();
+        }
+
+        private void InitializeIME()
+        {
+            if (!IMEDisabled && WindowManager.IMEHandler != null)
+            {
+                WindowManager.IMEHandler.RegisterXNATextBox(this, HandleCharInput);
+                TextChanged += (sender, e) =>
+                {
+                    WindowManager.IMEHandler.OnTextChanged(this);
+                };
+            }
         }
 
 #if XNA
         private void KeyboardEventInput_CharEntered(object sender, KeyboardEventArgs e)
         {
+            if (!IMEDisabled && WindowManager.IMEHandler != null)
+            {
+                if (WindowManager.IMEHandler.HandleCharInput(this, e.Character))
+                    return;
+            }
             HandleCharInput(e.Character);
         }
 #else
         private void Window_TextInput(object sender, TextInputEventArgs e)
         {
+            if (!IMEDisabled && WindowManager.IMEHandler != null)
+            {
+                if (WindowManager.IMEHandler.HandleCharInput(this, e.Character))
+                    return;
+            }
             HandleCharInput(e.Character);
         }
 #endif
@@ -385,9 +414,21 @@ namespace Rampastring.XNAUI.XNAControls
 
                     return true;
                 case Keys.Enter:
+                    if (!IMEDisabled && WindowManager.IMEHandler != null)
+                    {
+                        if (WindowManager.IMEHandler.HandleEnterKey(this))
+                            return true;
+                    }
+
                     EnterPressed?.Invoke(this, EventArgs.Empty);
                     return true;
                 case Keys.Escape:
+                    if (!IMEDisabled && WindowManager.IMEHandler != null)
+                    {
+                        if (WindowManager.IMEHandler.HandleEscapeKey(this))
+                            return true;
+                    }
+
                     InputPosition = 0;
                     Text = string.Empty;
                     InputReceived?.Invoke(this, EventArgs.Empty);
@@ -474,6 +515,12 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void ScrollLeft()
         {
+            if (!IMEDisabled && WindowManager.IMEHandler != null)
+            {
+                if (WindowManager.IMEHandler.HandleScrollLeftKey(this))
+                    return;
+            }
+
             if (InputPosition == 0)
                 return;
 
@@ -489,6 +536,12 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void ScrollRight()
         {
+            if (!IMEDisabled && WindowManager.IMEHandler != null)
+            {
+                if (WindowManager.IMEHandler.HandleScrollRightKey(this))
+                    return;
+            }
+
             if (InputPosition >= text.Length)
                 return;
 
@@ -507,6 +560,12 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void DeleteCharacter()
         {
+            if (!IMEDisabled && WindowManager.IMEHandler != null)
+            {
+                if (WindowManager.IMEHandler.HandleDeleteKey(this))
+                    return;
+            }
+
             if (text.Length > InputPosition)
             {
                 text = text.Remove(InputPosition, 1);
@@ -527,6 +586,12 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void Backspace()
         {
+            if (!IMEDisabled && WindowManager.IMEHandler != null)
+            {
+                if (WindowManager.IMEHandler.HandleBackspaceKey(this))
+                    return;
+            }
+
             if (text.Length > 0 && InputPosition > 0)
             {
                 text = text.Remove(InputPosition - 1, 1);
@@ -540,6 +605,12 @@ namespace Rampastring.XNAUI.XNAControls
             }
 
             InputReceived?.Invoke(this, EventArgs.Empty);
+        }
+        public override void OnSelectedChanged()
+        {
+            // Note: IMEHandler.OnSelectedChanged() should be called even if this.IMEDisabled holds true
+            WindowManager.IMEHandler?.OnSelectedChanged(this);
+            base.OnSelectedChanged();
         }
 
         private void HandleScrollKeyDown(GameTime gameTime, Action action)
@@ -582,15 +653,26 @@ namespace Rampastring.XNAUI.XNAControls
                 FontIndex, new Vector2(TEXT_HORIZONTAL_MARGIN, TEXT_VERTICAL_MARGIN),
                 TextColor);
 
-            if (WindowManager.SelectedControl == this && Enabled && WindowManager.HasFocus &&
-                barTimer.TotalSeconds < BAR_ON_TIME)
+            if (WindowManager.SelectedControl == this && Enabled && WindowManager.HasFocus)
             {
                 int barLocationX = TEXT_HORIZONTAL_MARGIN;
 
                 string inputText = Text.Substring(TextStartPosition, InputPosition - TextStartPosition);
                 barLocationX += (int)Renderer.GetTextDimensions(inputText, FontIndex).X;
 
-                FillRectangle(new Rectangle(barLocationX, 2, 1, Height - 4), Color.White);
+                if (!IMEDisabled && WindowManager.IMEHandler != null)
+                {
+                    if (WindowManager.IMEHandler.GetDrawCompositionText(this, out string composition, out int compositionCursorPosition))
+                    {
+                        DrawString(composition, FontIndex, new Vector2(barLocationX, TEXT_VERTICAL_MARGIN), Color.Orange);
+                        Vector2 measStr = Renderer.GetTextDimensions(composition.Substring(0, compositionCursorPosition), FontIndex);
+                        barLocationX += (int)measStr.X;
+                    }
+                }
+                if (barTimer.TotalSeconds < BAR_ON_TIME)
+                {
+                    FillRectangle(new Rectangle(barLocationX, 2, 1, Height - 4), Color.White);
+                }
             }
 
             base.Draw(gameTime);

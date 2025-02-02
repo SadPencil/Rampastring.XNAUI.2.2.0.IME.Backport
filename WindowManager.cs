@@ -118,6 +118,8 @@ namespace Rampastring.XNAUI
 
         public bool IsInputExclusivelyCaptured => SelectedControl != null && SelectedControl.ExclusiveInputCapture;
 
+        public IIMEHandler IMEHandler { get; set; } = null;
+
         private GraphicsDeviceManager graphics;
 
         private IGameWindowManager gameWindowManager;
@@ -654,7 +656,11 @@ namespace Rampastring.XNAUI
                 WindowWidth - (SceneXPosition * 2), WindowHeight - (SceneYPosition * 2)), Color.White);
 
 #if DEBUG
-            Renderer.DrawString("Active control " + activeControlName, 0, Vector2.Zero, Color.Red, 1.0f);
+            Renderer.DrawString("Active control: " + activeControlName, 0, Vector2.Zero, Color.Red, 1.0f);
+            if (IMEHandler != null && IMEHandler.TextCompositionEnabled)
+            {
+                Renderer.DrawString("IME Enabled", 0, new Vector2(0, 16), Color.Red, 1.0f);
+            }
 #endif
 
             if (Cursor.Visible)
