@@ -73,6 +73,9 @@ namespace Rampastring.XNAUI
         /// </summary>
         public float RepeatPrevention { get; set; }
 
+        /// <summary>
+        /// The volume multiplier for this sound effect.
+        /// </summary>
         public float Volume { get; set; } = 1.0f;
 
         /// <summary>
